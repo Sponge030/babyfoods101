@@ -106,17 +106,16 @@ const FILTERS = [
 ]
 
 export default function App() {
-  const [session, setSession] = useState(undefined) // undefined=loading, null=logged out
+  const [session, setSession] = useState(undefined)
   const [babies, setBabies] = useState([])
   const [selectedBaby, setSelectedBaby] = useState(null)
-  const [foodLog, setFoodLog] = useState({}) // { food_name: log_row }
+  const [foodLog, setFoodLog] = useState({})
   const [loadingLog, setLoadingLog] = useState(false)
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [selectedFood, setSelectedFood] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  // Auth listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => setSession(session))
@@ -125,14 +124,14 @@ export default function App() {
 
   // Load babies when logged in
   useEffect(() => {
-    if (!session) { setBabies([]); setSelectedBaby(null); return }
-    supabase.from('babies').select('*').order('created_at').then(({ data }) => {
+    if (!session?.access_token) { setBabies([]); setSelectedBaby(null); return }
+    supabase.from('babies').select('*').order('created_at').then(({ data, error }) => {
+      if (error) { console.error('babies load error:', error); return }
       if (data?.length) { setBabies(data); setSelectedBaby(data[0]) }
       else setBabies([])
     })
-  }, [session])
+  }, [session?.access_token])
 
-  // Load food log when baby changes
   useEffect(() => {
     if (!selectedBaby) { setFoodLog({}); return }
     setLoadingLog(true)
@@ -163,128 +162,4 @@ export default function App() {
       if (filter==='notes') return entry?.reaction
       if (filter==='allergen') return ALLERGENS.has(f.name)
       if (filter==='phase6') return f.phase===6
-      if (filter==='phase8') return f.phase===8
-      if (filter==='phase10plus') return f.phase>=10
-      return true
-    })
-  }, [allFoods, foodLog, filter, search])
-
-  const byCategory = useMemo(() => {
-    const map = {}
-    for (const cat of CATEGORIES) map[cat] = []
-    for (const f of filtered) { if (!map[f.category]) map[f.category] = []; map[f.category].push(f) }
-    return map
-  }, [filtered])
-
-  const handleSave = useCallback(async (date, reaction) => {
-    if (!selectedFood || !selectedBaby) return
-    setSaving(true)
-    const existing = foodLog[selectedFood.name]
-    if (existing) {
-      const { data } = await supabase.from('food_log').update({ introduced_at: date, reaction }).eq('id', existing.id).select().single()
-      if (data) setFoodLog(prev => ({ ...prev, [selectedFood.name]: data }))
-    } else {
-      const { data } = await supabase.from('food_log').insert({ baby_id: selectedBaby.id, food_name: selectedFood.name, introduced_at: date, reaction }).select().single()
-      if (data) setFoodLog(prev => ({ ...prev, [selectedFood.name]: data }))
-    }
-    setSaving(false)
-    setSelectedFood(null)
-  }, [selectedFood, selectedBaby, foodLog])
-
-  const handleDelete = useCallback(async () => {
-    if (!selectedFood) return
-    const existing = foodLog[selectedFood.name]
-    if (!existing) return
-    setSaving(true)
-    await supabase.from('food_log').delete().eq('id', existing.id)
-    setFoodLog(prev => { const n={...prev}; delete n[selectedFood.name]; return n })
-    setSaving(false)
-    setSelectedFood(null)
-  }, [selectedFood, foodLog])
-
-  // Loading state
-  if (session === undefined) {
-    return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', color:'#aaa', fontSize:14 }}>Laden…</div>
-  }
-
-  if (!session) return <AuthScreen />
-
-  // No babies yet
-  if (babies.length === 0) {
-    return (
-      <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
-        <div style={{ background:'#fff', borderRadius:16, padding:'2rem', maxWidth:380, width:'100%', textAlign:'center', boxShadow:'0 4px 24px rgba(0,0,0,.08)' }}>
-          <div style={{ fontSize:40, marginBottom:12 }}>👶</div>
-          <div style={{ fontSize:17, fontWeight:700, marginBottom:8 }}>Erstes Baby anlegen</div>
-          <div style={{ fontSize:13, color:'#888', marginBottom:'1.5rem' }}>Leg dein erstes Baby an um mit dem Tracken zu beginnen.</div>
-          <BabySelector babies={[]} selectedBaby={null} onSelect={setSelectedBaby} onBabiesChange={b=>{ setBabies(b); if(b.length) setSelectedBaby(b[0]) }} userEmail={session.user.email} />
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div style={{ minHeight:'100vh' }}>
-      <BabySelector babies={babies} selectedBaby={selectedBaby} onSelect={b=>{ setSelectedBaby(b); setFilter('all'); setSearch('') }} onBabiesChange={setBabies} userEmail={session.user.email} />
-
-      <div style={{ maxWidth:860, margin:'0 auto', padding:'0 1rem 2rem' }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem', flexWrap:'wrap', gap:8 }}>
-          <div>
-            <h1 style={{ fontSize:19, fontWeight:700, marginBottom:2 }}>
-              {selectedBaby?.name} – Erste 101 Lebensmittel
-            </h1>
-            <p style={{ fontSize:13, color:'#888' }}>Beikost-Tracker · Baby Led Weaning</p>
-          </div>
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-            {[{label:'Eingeführt',val:fedCount,bg:'#f0faf5',color:'#047857'},{label:'Noch offen',val:allFoods.length-fedCount,bg:'#f5f5f3',color:'#666'},{label:'Gesamt',val:allFoods.length,bg:'#f5f5f3',color:'#666'}].map(s=>(
-              <div key={s.label} style={{ background:s.bg, borderRadius:9, padding:'6px 14px', fontSize:13, color:s.color, border:'1px solid #e5e5e3' }}>{s.label}: <strong>{s.val}</strong></div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ background:'#fff4cd', border:'1px solid #fde68a', borderRadius:9, padding:'10px 14px', fontSize:12, color:'#92400e', lineHeight:1.6, marginBottom:'1rem' }}>
-          <strong>Hinweis:</strong> Monatsangaben sind allgemeine Richtwerte, keine medizinischen Empfehlungen. Bitte individuelle Empfehlungen mit eurer Kinderärztin besprechen – besonders bei Frühgeburt oder Allergievorgeschichte in der Familie.
-        </div>
-
-        <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Lebensmittel suchen…"
-          style={{ width:'100%', padding:'9px 14px', border:'1px solid #ddd', borderRadius:10, fontSize:14, background:'#fff', marginBottom:'1rem', fontFamily:'inherit' }} />
-
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:'1.25rem' }}>
-          {FILTERS.map(f=>(
-            <button key={f.id} onClick={()=>setFilter(f.id)} style={{ padding:'5px 14px', borderRadius:20, border:'1px solid', fontSize:13, cursor:'pointer', background:filter===f.id?'#e8f0fe':'#fff', color:filter===f.id?'#1a56db':'#666', borderColor:filter===f.id?'#a4c0f9':'#ddd' }}>
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {loadingLog ? (
-          <div style={{ textAlign:'center', color:'#aaa', padding:'2rem', fontSize:14 }}>Lade Einträge…</div>
-        ) : (
-          <>
-            {CATEGORIES.map(cat=>{
-              const items = byCategory[cat]
-              if (!items?.length) return null
-              return (
-                <div key={cat} style={{ marginBottom:'1.5rem' }}>
-                  <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em', color:'#999', marginBottom:8 }}>{cat}</div>
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(155px, 1fr))', gap:6 }}>
-                    {items.map(food=>(
-                      <FoodCard key={food.name} food={food} logEntry={foodLog[food.name]} onClick={setSelectedFood} />
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-            {filtered.length===0 && <div style={{ textAlign:'center', color:'#bbb', padding:'2rem', fontSize:14 }}>Keine Lebensmittel für diesen Filter gefunden.</div>}
-          </>
-        )}
-      </div>
-
-      {selectedFood && (
-        <Modal food={selectedFood} logEntry={foodLog[selectedFood.name]}
-          onSave={handleSave} onDelete={handleDelete}
-          onClose={()=>setSelectedFood(null)} saving={saving} />
-      )}
-    </div>
-  )
-}
+      if (filter==='phas
