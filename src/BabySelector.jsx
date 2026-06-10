@@ -42,30 +42,32 @@ export default function BabySelector({ babies, selectedBaby, onSelect, onBabiesC
 
   return (
     <div style={s.bar}>
-      <div style={s.left}>
-        <span style={s.logo}>101 Lebensmittel</span>
-        <div style={s.babyRow}>
-          {babies.map(b => (
-            <div key={b.id} style={s.babyChipWrap}>
-              <button
-                onClick={() => onSelect(b)}
-                style={{ ...s.babyChip, ...(selectedBaby?.id === b.id ? s.babyChipActive : {}) }}
-              >
-                {b.name}
-              </button>
-              {babies.length > 1 && (
-                <button onClick={() => deleteBaby(b)} style={s.deleteBtn} title="Baby löschen">×</button>
-              )}
-            </div>
-          ))}
-          <button onClick={() => setShowAdd(!showAdd)} style={s.addBabyBtn} title="Baby hinzufügen">
-            + Baby
-          </button>
+      <div style={s.topRow}>
+        <div style={s.left}>
+          <span style={s.logo}>101 Lebensmittel</span>
+          <div style={s.babyRow}>
+            {babies.map(b => (
+              <div key={b.id} style={s.babyChipWrap}>
+                <button
+                  onClick={() => onSelect(b)}
+                  style={{ ...s.babyChip, ...(selectedBaby?.id === b.id ? s.babyChipActive : {}) }}
+                >
+                  {b.name}
+                </button>
+                {babies.length > 1 && (
+                  <button onClick={() => deleteBaby(b)} style={s.deleteBtn} title="Baby löschen">×</button>
+                )}
+              </div>
+            ))}
+            <button onClick={() => setShowAdd(!showAdd)} style={s.addBabyBtn} title="Baby hinzufügen">
+              + Baby
+            </button>
+          </div>
         </div>
-      </div>
-      <div style={s.right}>
-        <span style={s.email}>{userEmail}</span>
-        <button onClick={signOut} style={s.signOutBtn}>Abmelden</button>
+        <div style={s.right}>
+          <span style={s.email}>{userEmail}</span>
+          <button onClick={signOut} style={s.signOutBtn}>Abmelden</button>
+        </div>
       </div>
 
       {showAdd && (
@@ -97,9 +99,10 @@ export default function BabySelector({ babies, selectedBaby, onSelect, onBabiesC
 }
 
 const styles = {
-  bar: { background: '#fff', borderBottom: '1px solid #e5e5e3', padding: '12px 1rem', marginBottom: '1rem', position: 'relative' },
+  bar: { background: '#fff', borderBottom: '1px solid #e5e5e3', padding: '12px 1rem', marginBottom: '1rem' },
+  topRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
   left: { display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' },
-  right: { position: 'absolute', top: 12, right: '1rem', display: 'flex', alignItems: 'center', gap: 10 },
+  right: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 },
   logo: { fontSize: 15, fontWeight: 700, color: '#1a56db', whiteSpace: 'nowrap' },
   babyRow: { display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' },
   babyChipWrap: { position: 'relative', display: 'flex', alignItems: 'center' },
