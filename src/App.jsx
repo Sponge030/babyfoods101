@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { supabase } from './supabase'
 import { FOODS, ALLERGENS, CATEGORIES } from './foods'
 import AuthScreen from './AuthScreen'
@@ -20,12 +20,17 @@ function AllergenBadge() {
   return <span style={{ fontSize:10, padding:'1px 6px', borderRadius:4, background:'#fee2e2', color:'#b91c1c', fontWeight:500 }}>Allergen</span>
 }
 
+const DEFAULT_BG = '#f5f5f3'
+const PHASES = [6, 8, 10, 12]
+
+function isAllergenFood(food) { return ALLERGENS.has(food.name) || !!food.is_allergen }
+
 function today() { return new Date().toISOString().split('T')[0] }
 function formatDate(iso) { if(!iso)return''; const[y,m,d]=iso.split('-'); return`${d}.${m}.${y}` }
 
 function FoodCard({ food, logEntry, onClick }) {
   const isFed = !!logEntry
-  const isAllergen = ALLERGENS.has(food.name)
+  const isAllergen = isAllergenFood(food)
   return (
     <div onClick={() => onClick(food)} style={{
       border: `1px solid ${isFed ? '#6ee7b7' : isAllergen ? '#fca5a5' : '#e5e5e3'}`,
@@ -41,6 +46,7 @@ function FoodCard({ food, logEntry, onClick }) {
       <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
         <PhaseBadge phase={food.phase} />
         {isAllergen && <AllergenBadge />}
+        {food.isCustom && <span style={{ fontSize:10, padding:'1px 6px', borderRadius:4, background:'#ede9fe', color:'#6d28d9', fontWeight:500 }}>Eigenes</span>}
       </div>
       {isFed && logEntry.introduced_at && <div style={{ fontSize:11, color:'#6ee7b7', marginTop:4 }}>{formatDate(logEntry.introduced_at)}</div>}
       {isFed && logEntry.reaction && <div style={{ fontSize:11, color:'#666', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{logEntry.reaction}</div>}
@@ -49,10 +55,10 @@ function FoodCard({ food, logEntry, onClick }) {
   )
 }
 
-function Modal({ food, logEntry, onSave, onDelete, onClose, saving }) {
+function Modal({ food, logEntry, onSave, onDelete, onClose, saving, onDeleteCustomFood }) {
   const [date, setDate] = useState(logEntry?.introduced_at || today())
   const [reaction, setReaction] = useState(logEntry?.reaction || '')
-  const isAllergen = ALLERGENS.has(food.name)
+  const isAllergen = isAllergenFood(food)
 
   return (
     <div onClick={e=>{ if(e.target===e.currentTarget)onClose() }} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'1rem' }}>
@@ -94,6 +100,84 @@ function Modal({ food, logEntry, onSave, onDelete, onClose, saving }) {
             </button>
           </div>
         </div>
+
+        {food.isCustom && (
+          <div style={{ borderTop:'1px solid #eee', marginTop:'1rem', paddingTop:'1rem', textAlign:'right' }}>
+            <button onClick={()=>onDeleteCustomFood(food)} style={{ padding:'6px 12px', borderRadius:8, border:'1px solid #eee', background:'#fff', color:'#b91c1c', fontSize:12, cursor:'pointer' }}>
+              Eigenes Lebensmittel löschen
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AddFoodModal({ onSave, onClose, saving }) {
+  const [name, setName] = useState('')
+  const [category, setCategory] = useState(CATEGORIES[0])
+  const [phase, setPhase] = useState(6)
+  const [prep, setPrep] = useState('')
+  const [tips, setTips] = useState('')
+  const [isAllergen, setIsAllergen] = useState(false)
+  const [error, setError] = useState('')
+
+  function submit() {
+    if (!name.trim()) { setError('Bitte einen Namen eingeben.'); return }
+    setError('')
+    onSave({ name: name.trim(), category, phase, prep: prep.trim(), tips: tips.trim(), is_allergen: isAllergen })
+  }
+
+  return (
+    <div onClick={e=>{ if(e.target===e.currentTarget)onClose() }} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'1rem' }}>
+      <div style={{ background:'#fff', borderRadius:16, padding:'1.5rem', width:'100%', maxWidth:440, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 12px 40px rgba(0,0,0,.2)' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'1rem' }}>
+          <div style={{ fontSize:18, fontWeight:700 }}>Eigenes Lebensmittel hinzufügen</div>
+          <button onClick={onClose} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer', color:'#999', lineHeight:1, padding:'0 4px' }}>×</button>
+        </div>
+
+        <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Name</label>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="z.B. Drachenfrucht" autoFocus
+          style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, marginBottom:10, fontFamily:'inherit' }} />
+
+        <div style={{ display:'flex', gap:12, marginBottom:10 }}>
+          <div style={{ flex:1 }}>
+            <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Kategorie</label>
+            <select value={category} onChange={e=>setCategory(e.target.value)}
+              style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, fontFamily:'inherit', background:'#fff' }}>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div style={{ flex:1 }}>
+            <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Ab wann (Monate)</label>
+            <select value={phase} onChange={e=>setPhase(Number(e.target.value))}
+              style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, fontFamily:'inherit', background:'#fff' }}>
+              {PHASES.map(p => <option key={p} value={p}>ab {p} Mo</option>)}
+            </select>
+          </div>
+        </div>
+
+        <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Zubereitung</label>
+        <textarea value={prep} onChange={e=>setPrep(e.target.value)} rows={2} placeholder="z.B. Weich garen und pürieren…"
+          style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, resize:'vertical', fontFamily:'inherit', marginBottom:10 }} />
+
+        <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Hinweise (optional)</label>
+        <textarea value={tips} onChange={e=>setTips(e.target.value)} rows={2} placeholder="z.B. Kann Blähungen verursachen…"
+          style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, resize:'vertical', fontFamily:'inherit', marginBottom:10 }} />
+
+        <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, color:'#333', marginBottom:4, cursor:'pointer' }}>
+          <input type="checkbox" checked={isAllergen} onChange={e=>setIsAllergen(e.target.checked)} />
+          Häufiges Allergen
+        </label>
+
+        {error && <div style={{ marginTop:8, padding:'6px 10px', background:'#fee2e2', color:'#b91c1c', borderRadius:6, fontSize:12 }}>{error}</div>}
+
+        <div style={{ display:'flex', gap:8, marginTop:14, justifyContent:'flex-end' }}>
+          <button onClick={onClose} style={{ padding:'7px 14px', borderRadius:8, border:'1px solid #ddd', background:'#fff', fontSize:13, cursor:'pointer' }}>Abbrechen</button>
+          <button onClick={submit} disabled={saving} style={{ padding:'7px 16px', borderRadius:8, border:'1px solid #a4c0f9', background:'#e8f0fe', color:'#1a56db', fontSize:13, cursor:'pointer', fontWeight:600, opacity: saving?0.7:1 }}>
+            {saving ? 'Speichern…' : 'Hinzufügen'}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -115,6 +199,11 @@ export default function App() {
   const [search, setSearch] = useState('')
   const [selectedFood, setSelectedFood] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const avatarInputRef = useRef(null)
+  const [customFoods, setCustomFoods] = useState([])
+  const [showAddFood, setShowAddFood] = useState(false)
+  const [savingFood, setSavingFood] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
@@ -129,6 +218,15 @@ export default function App() {
       if (error) { console.error('babies load error:', error); return }
       if (data?.length) { setBabies(data); setSelectedBaby(data[0]) }
       else setBabies([])
+    })
+  }, [session?.access_token])
+
+  // Load this account's custom foods (shared across all their babies)
+  useEffect(() => {
+    if (!session?.access_token) { setCustomFoods([]); return }
+    supabase.from('custom_foods').select('*').order('created_at').then(({ data, error }) => {
+      if (error) { console.error('custom_foods load error:', error); return }
+      setCustomFoods(data || [])
     })
   }, [session?.access_token])
 
@@ -147,8 +245,9 @@ export default function App() {
     const r = []
     for (const [cat, items] of Object.entries(FOODS))
       for (const item of items) r.push({ ...item, category: cat })
+    for (const f of customFoods) r.push({ ...f, isCustom: true })
     return r
-  }, [])
+  }, [customFoods])
 
   const fedCount = Object.keys(foodLog).length
 
@@ -160,7 +259,7 @@ export default function App() {
       if (filter==='fed') return !!entry
       if (filter==='unfed') return !entry
       if (filter==='notes') return entry?.reaction
-      if (filter==='allergen') return ALLERGENS.has(f.name)
+      if (filter==='allergen') return isAllergenFood(f)
       if (filter==='phase6') return f.phase===6
       if (filter==='phase8') return f.phase===8
       if (filter==='phase10plus') return f.phase>=10
@@ -201,6 +300,47 @@ export default function App() {
     setSelectedFood(null)
   }, [selectedFood, foodLog])
 
+  const handleBackgroundChange = useCallback(async (color) => {
+    if (!selectedBaby) return
+    setSelectedBaby(prev => ({ ...prev, background_color: color }))
+    setBabies(prev => prev.map(b => b.id === selectedBaby.id ? { ...b, background_color: color } : b))
+    await supabase.from('babies').update({ background_color: color }).eq('id', selectedBaby.id)
+  }, [selectedBaby])
+
+  const handleAvatarChange = useCallback(async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !selectedBaby || !session?.user) return
+    setUploadingAvatar(true)
+    const ext = file.name.split('.').pop()
+    const path = `${session.user.id}/${selectedBaby.id}.${ext}`
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+    if (uploadError) { console.error('avatar upload error:', uploadError); setUploadingAvatar(false); return }
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    const avatarUrl = `${data.publicUrl}?t=${Date.now()}`
+    setSelectedBaby(prev => ({ ...prev, avatar_url: avatarUrl }))
+    setBabies(prev => prev.map(b => b.id === selectedBaby.id ? { ...b, avatar_url: avatarUrl } : b))
+    await supabase.from('babies').update({ avatar_url: avatarUrl }).eq('id', selectedBaby.id)
+    setUploadingAvatar(false)
+  }, [selectedBaby, session])
+
+  const handleAddFood = useCallback(async (foodData) => {
+    if (!session?.user) return
+    setSavingFood(true)
+    const { data, error } = await supabase.from('custom_foods').insert({ ...foodData, user_id: session.user.id }).select().single()
+    setSavingFood(false)
+    if (error) { console.error('custom_foods insert error:', error); return }
+    setCustomFoods(prev => [...prev, data])
+    setShowAddFood(false)
+  }, [session])
+
+  const handleDeleteCustomFood = useCallback(async (food) => {
+    if (!confirm(`"${food.name}" wirklich aus deinen eigenen Lebensmitteln löschen?`)) return
+    await supabase.from('custom_foods').delete().eq('id', food.id)
+    setCustomFoods(prev => prev.filter(f => f.id !== food.id))
+    setSelectedFood(null)
+  }, [])
+
   if (session === undefined) {
     return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', color:'#aaa', fontSize:14 }}>Laden…</div>
   }
@@ -220,17 +360,37 @@ export default function App() {
     )
   }
 
+  const bgColor = selectedBaby?.background_color || DEFAULT_BG
+
   return (
-    <div style={{ minHeight:'100vh' }}>
+    <div style={{ minHeight:'100vh', background:bgColor, transition:'background .2s' }}>
       <BabySelector babies={babies} selectedBaby={selectedBaby} onSelect={b=>{ setSelectedBaby(b); setFilter('all'); setSearch('') }} onBabiesChange={setBabies} userEmail={session.user.email} />
 
       <div style={{ maxWidth:860, margin:'0 auto', padding:'0 1rem 2rem' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem', flexWrap:'wrap', gap:8 }}>
-          <div>
-            <h1 style={{ fontSize:19, fontWeight:700, marginBottom:2 }}>
-              {selectedBaby?.name} – Erste 101 Lebensmittel
-            </h1>
-            <p style={{ fontSize:13, color:'#888' }}>Beikost-Tracker · Baby Led Weaning</p>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <div onClick={()=>avatarInputRef.current?.click()} title="Baby-Foto hochladen" style={{
+              width:44, height:44, borderRadius:'50%', flexShrink:0, cursor:'pointer', position:'relative',
+              background: selectedBaby?.avatar_url ? 'transparent' : '#eee', overflow:'hidden',
+              display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 0 1px #ddd',
+            }}>
+              {selectedBaby?.avatar_url
+                ? <img src={selectedBaby.avatar_url} alt={selectedBaby.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                : <span style={{ fontSize:20 }}>👶</span>}
+              {uploadingAvatar && (
+                <div style={{ position:'absolute', inset:0, background:'rgba(255,255,255,.75)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, color:'#666' }}>…</div>
+              )}
+            </div>
+            <input type="file" accept="image/*" ref={avatarInputRef} onChange={handleAvatarChange} style={{ display:'none' }} />
+            <div>
+              <h1 style={{ fontSize:19, fontWeight:700, marginBottom:2 }}>
+                {selectedBaby?.name}
+              </h1>
+              <p style={{ fontSize:13, color:'#888' }}>Beikost-Tracker · Baby Led Weaning</p>
+            </div>
+            <input type="color" value={bgColor} onChange={e=>handleBackgroundChange(e.target.value)}
+              title="Hintergrundfarbe für dieses Baby"
+              style={{ width:28, height:28, padding:0, border:'1px solid #ddd', borderRadius:'50%', cursor:'pointer', overflow:'hidden', flexShrink:0 }} />
           </div>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
             {[{label:'Eingeführt',val:fedCount,bg:'#f0faf5',color:'#047857'},{label:'Noch offen',val:allFoods.length-fedCount,bg:'#f5f5f3',color:'#666'},{label:'Gesamt',val:allFoods.length,bg:'#f5f5f3',color:'#666'}].map(s=>(
@@ -243,8 +403,13 @@ export default function App() {
           <strong>Hinweis:</strong> Monatsangaben sind allgemeine Richtwerte, keine medizinischen Empfehlungen. Bitte individuelle Empfehlungen mit eurer Kinderärztin besprechen – besonders bei Frühgeburt oder Allergievorgeschichte in der Familie.
         </div>
 
-        <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Lebensmittel suchen…"
-          style={{ width:'100%', padding:'9px 14px', border:'1px solid #ddd', borderRadius:10, fontSize:14, background:'#fff', marginBottom:'1rem', fontFamily:'inherit' }} />
+        <div style={{ display:'flex', gap:8, marginBottom:'1rem' }}>
+          <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Lebensmittel suchen…"
+            style={{ flex:1, padding:'9px 14px', border:'1px solid #ddd', borderRadius:10, fontSize:14, background:'#fff', fontFamily:'inherit' }} />
+          <button onClick={()=>setShowAddFood(true)} style={{ padding:'9px 14px', borderRadius:10, border:'1px dashed #a4c0f9', background:'#e8f0fe', color:'#1a56db', fontSize:13, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+            + Lebensmittel
+          </button>
+        </div>
 
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:'1.25rem' }}>
           {FILTERS.map(f=>(
@@ -279,8 +444,12 @@ export default function App() {
 
       {selectedFood && (
         <Modal food={selectedFood} logEntry={foodLog[selectedFood.name]}
-          onSave={handleSave} onDelete={handleDelete}
+          onSave={handleSave} onDelete={handleDelete} onDeleteCustomFood={handleDeleteCustomFood}
           onClose={()=>setSelectedFood(null)} saving={saving} />
+      )}
+
+      {showAddFood && (
+        <AddFoodModal onSave={handleAddFood} onClose={()=>setShowAddFood(false)} saving={savingFood} />
       )}
     </div>
   )
