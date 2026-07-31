@@ -200,6 +200,7 @@ export default function App() {
   const [selectedFood, setSelectedFood] = useState(null)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false)
   const avatarInputRef = useRef(null)
   const [customFoods, setCustomFoods] = useState([])
   const [showAddFood, setShowAddFood] = useState(false)
@@ -369,7 +370,8 @@ export default function App() {
       <div style={{ maxWidth:860, margin:'0 auto', padding:'0 1rem 2rem' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem', flexWrap:'wrap', gap:8 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <div onClick={()=>avatarInputRef.current?.click()} title="Baby-Foto hochladen" style={{
+            <div onClick={()=>selectedBaby?.avatar_url ? setShowAvatarPreview(true) : avatarInputRef.current?.click()}
+              title={selectedBaby?.avatar_url ? 'Foto ansehen' : 'Baby-Foto hochladen'} style={{
               width:44, height:44, borderRadius:'50%', flexShrink:0, cursor:'pointer', position:'relative',
               background: selectedBaby?.avatar_url ? 'transparent' : '#eee', overflow:'hidden',
               display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 0 1px #ddd',
@@ -450,6 +452,22 @@ export default function App() {
 
       {showAddFood && (
         <AddFoodModal onSave={handleAddFood} onClose={()=>setShowAddFood(false)} saving={savingFood} />
+      )}
+
+      {showAvatarPreview && selectedBaby?.avatar_url && (
+        <div onClick={e=>{ if(e.target===e.currentTarget)setShowAvatarPreview(false) }} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:300, padding:'1rem' }}>
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, maxWidth:420, width:'100%' }}>
+            <img src={selectedBaby.avatar_url} alt={selectedBaby.name} style={{ width:'100%', maxWidth:340, aspectRatio:'1 / 1', objectFit:'cover', borderRadius:'50%', boxShadow:'0 12px 40px rgba(0,0,0,.4)' }} />
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={()=>{ setShowAvatarPreview(false); avatarInputRef.current?.click() }} style={{ padding:'8px 16px', borderRadius:8, border:'1px solid #a4c0f9', background:'#e8f0fe', color:'#1a56db', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                Foto ändern
+              </button>
+              <button onClick={()=>setShowAvatarPreview(false)} style={{ padding:'8px 16px', borderRadius:8, border:'1px solid #ddd', background:'#fff', fontSize:13, cursor:'pointer' }}>
+                Schließen
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
