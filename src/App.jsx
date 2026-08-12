@@ -17,11 +17,15 @@ function PhaseBadge({ phase }) {
 }
 
 function AllergenBadge() {
-  return <span style={{ fontSize:10, padding:'1px 6px', borderRadius:4, background:'#fee2e2', color:'#b91c1c', fontWeight:500 }}>Allergen</span>
+  return <span style={{ fontSize:10, padding:'1px 6px', borderRadius:6, background:'#fee2e2', color:'#b91c1c', fontWeight:500 }}>Allergen</span>
 }
 
-const DEFAULT_BG = '#f5f5f3'
+const DEFAULT_BG = '#fdf6ee'
 const PHASES = [6, 8, 10, 12]
+const CATEGORY_ICONS = {
+  'Gemüse':'🥕','Obst':'🍎','Fleisch':'🍗','Meeresfrüchte':'🐟',
+  'Hülsenfrüchte':'🌱','Getreide':'🌾','Milchprodukte':'🥛','Nüsse & Samen':'🥜','Gewürze':'🧂',
+}
 
 function isAllergenFood(food) { return ALLERGENS.has(food.name) || !!food.is_allergen }
 
@@ -33,20 +37,22 @@ function FoodCard({ food, logEntry, onClick }) {
   const isAllergen = isAllergenFood(food)
   return (
     <div onClick={() => onClick(food)} style={{
-      border: `1px solid ${isFed ? '#6ee7b7' : isAllergen ? '#fca5a5' : '#e5e5e3'}`,
-      borderLeft: isAllergen ? '3px solid #ef4444' : undefined,
-      borderRadius: isAllergen ? '0 9px 9px 0' : 9,
+      borderTop: `1px solid ${isFed ? '#6ee7b7' : isAllergen ? '#fca5a5' : '#f0e4d8'}`,
+      borderRight: `1px solid ${isFed ? '#6ee7b7' : isAllergen ? '#fca5a5' : '#f0e4d8'}`,
+      borderBottom: `1px solid ${isFed ? '#6ee7b7' : isAllergen ? '#fca5a5' : '#f0e4d8'}`,
+      borderLeft: isAllergen ? '3px solid #ef4444' : `1px solid ${isFed ? '#6ee7b7' : '#f0e4d8'}`,
+      borderRadius: isAllergen ? '0 14px 14px 0' : 14,
       padding:'10px 12px', cursor:'pointer', background: isFed ? '#f0faf5' : '#fff',
-      position:'relative', transition:'box-shadow .15s',
+      position:'relative', transition:'box-shadow .15s, transform .15s',
     }}
-    onMouseEnter={e=>e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,.08)'}
-    onMouseLeave={e=>e.currentTarget.style.boxShadow=''}>
+    onMouseEnter={e=>{ e.currentTarget.style.boxShadow='0 6px 16px rgba(190,24,93,.1)'; e.currentTarget.style.transform='translateY(-2px)' }}
+    onMouseLeave={e=>{ e.currentTarget.style.boxShadow=''; e.currentTarget.style.transform='' }}>
       <div style={{ position:'absolute', top:8, right:8, width:16, height:16, borderRadius:'50%', border: isFed?'1.5px solid #6ee7b7':'1.5px solid #ddd', background: isFed?'#d1fae5':'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:'#047857' }}>{isFed&&'✓'}</div>
-      <div style={{ fontSize:13, fontWeight:500, color: isFed?'#047857':'#1a1a1a', paddingRight:22, marginBottom:5 }}>{food.name}</div>
+      <div style={{ fontSize:13, fontWeight:600, color: isFed?'#047857':'#3a2f28', paddingRight:22, marginBottom:5 }}>{food.name}</div>
       <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
         <PhaseBadge phase={food.phase} />
         {isAllergen && <AllergenBadge />}
-        {food.isCustom && <span style={{ fontSize:10, padding:'1px 6px', borderRadius:4, background:'#ede9fe', color:'#6d28d9', fontWeight:500 }}>Eigenes</span>}
+        {food.isCustom && <span style={{ fontSize:10, padding:'1px 6px', borderRadius:6, background:'#ede9fe', color:'#6d28d9', fontWeight:500 }}>Eigenes</span>}
       </div>
       {isFed && logEntry.introduced_at && <div style={{ fontSize:11, color:'#6ee7b7', marginTop:4 }}>{formatDate(logEntry.introduced_at)}</div>}
       {isFed && logEntry.reaction && <div style={{ fontSize:11, color:'#666', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{logEntry.reaction}</div>}
@@ -61,11 +67,11 @@ function Modal({ food, logEntry, onSave, onDelete, onClose, saving, onDeleteCust
   const isAllergen = isAllergenFood(food)
 
   return (
-    <div onClick={e=>{ if(e.target===e.currentTarget)onClose() }} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'1rem' }}>
-      <div style={{ background:'#fff', borderRadius:16, padding:'1.5rem', width:'100%', maxWidth:440, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 12px 40px rgba(0,0,0,.2)' }}>
+    <div onClick={e=>{ if(e.target===e.currentTarget)onClose() }} style={{ position:'fixed', inset:0, background:'rgba(58,47,40,.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'1rem' }}>
+      <div style={{ background:'#fff', borderRadius:20, padding:'1.5rem', width:'100%', maxWidth:440, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 16px 48px rgba(58,47,40,.25)' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'1rem' }}>
           <div>
-            <div style={{ fontSize:18, fontWeight:700, marginBottom:6 }}>{food.name}</div>
+            <div style={{ fontSize:18, fontWeight:800, marginBottom:6 }}>{food.name}</div>
             <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
               <PhaseBadge phase={food.phase} />
               {isAllergen && <AllergenBadge />}
@@ -74,36 +80,36 @@ function Modal({ food, logEntry, onSave, onDelete, onClose, saving, onDeleteCust
           <button onClick={onClose} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer', color:'#999', lineHeight:1, padding:'0 4px' }}>×</button>
         </div>
 
-        <div style={{ background:'#f8f8f6', borderRadius:10, padding:'12px 14px', marginBottom:'1rem' }}>
-          <div style={{ fontSize:11, fontWeight:700, color:'#666', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>Zubereitung</div>
-          <div style={{ fontSize:13, color:'#333', lineHeight:1.65 }}>{food.prep}</div>
+        <div style={{ background:'#fdf6ee', borderRadius:14, padding:'12px 14px', marginBottom:'1rem' }}>
+          <div style={{ fontSize:11, fontWeight:700, color:'#a8927e', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>Zubereitung</div>
+          <div style={{ fontSize:13, color:'#4a3f38', lineHeight:1.65 }}>{food.prep}</div>
         </div>
 
         {food.tips && (
-          <div style={{ background: isAllergen?'#fff5f5':'#fffbeb', border:`1px solid ${isAllergen?'#fca5a5':'#fde68a'}`, borderRadius:10, padding:'12px 14px', marginBottom:'1rem' }}>
+          <div style={{ background: isAllergen?'#fff5f5':'#fffbeb', border:`1px solid ${isAllergen?'#fca5a5':'#fde68a'}`, borderRadius:14, padding:'12px 14px', marginBottom:'1rem' }}>
             <div style={{ fontSize:11, fontWeight:700, color: isAllergen?'#b91c1c':'#92400e', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>{isAllergen?'⚠ Hinweise & Allergen':'Hinweise'}</div>
-            <div style={{ fontSize:13, color:'#333', lineHeight:1.65 }}>{food.tips}</div>
+            <div style={{ fontSize:13, color:'#4a3f38', lineHeight:1.65 }}>{food.tips}</div>
           </div>
         )}
 
-        <div style={{ borderTop:'1px solid #eee', paddingTop:'1rem' }}>
-          <div style={{ fontSize:13, fontWeight:600, marginBottom:10 }}>Einführung protokollieren</div>
-          <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Datum</label>
-          <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, marginBottom:10, fontFamily:'inherit' }} />
-          <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Reaktion / Notizen</label>
-          <textarea value={reaction} onChange={e=>setReaction(e.target.value)} placeholder="z.B. hat es geliebt, leichter Ausschlag, bevorzugt püriert..." rows={3} style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, resize:'vertical', fontFamily:'inherit' }} />
+        <div style={{ borderTop:'1px solid #f0e4d8', paddingTop:'1rem' }}>
+          <div style={{ fontSize:13, fontWeight:700, marginBottom:10 }}>Einführung protokollieren</div>
+          <label style={{ fontSize:12, color:'#8a7768', display:'block', marginBottom:4 }}>Datum</label>
+          <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5d5c5', borderRadius:12, fontSize:13, marginBottom:10, fontFamily:'inherit' }} />
+          <label style={{ fontSize:12, color:'#8a7768', display:'block', marginBottom:4 }}>Reaktion / Notizen</label>
+          <textarea value={reaction} onChange={e=>setReaction(e.target.value)} placeholder="z.B. hat es geliebt, leichter Ausschlag, bevorzugt püriert..." rows={3} style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5d5c5', borderRadius:12, fontSize:13, resize:'vertical', fontFamily:'inherit' }} />
           <div style={{ display:'flex', gap:8, marginTop:12, justifyContent:'flex-end', flexWrap:'wrap' }}>
-            {logEntry && <button onClick={onDelete} disabled={saving} style={{ padding:'7px 14px', borderRadius:8, border:'1px solid #fca5a5', background:'#fee2e2', color:'#b91c1c', fontSize:13, cursor:'pointer' }}>Nicht eingeführt</button>}
-            <button onClick={onClose} style={{ padding:'7px 14px', borderRadius:8, border:'1px solid #ddd', background:'#fff', fontSize:13, cursor:'pointer' }}>Abbrechen</button>
-            <button onClick={()=>onSave(date,reaction)} disabled={saving} style={{ padding:'7px 16px', borderRadius:8, border:'1px solid #a4c0f9', background:'#e8f0fe', color:'#1a56db', fontSize:13, cursor:'pointer', fontWeight:600, opacity: saving?0.7:1 }}>
+            {logEntry && <button onClick={onDelete} disabled={saving} style={{ padding:'7px 14px', borderRadius:12, border:'1px solid #fca5a5', background:'#fee2e2', color:'#b91c1c', fontSize:13, cursor:'pointer' }}>Nicht eingeführt</button>}
+            <button onClick={onClose} style={{ padding:'7px 14px', borderRadius:12, border:'1px solid #e5d5c5', background:'#fff', fontSize:13, cursor:'pointer' }}>Abbrechen</button>
+            <button onClick={()=>onSave(date,reaction)} disabled={saving} style={{ padding:'7px 16px', borderRadius:12, border:'1px solid #f9a8d4', background:'#fce7f3', color:'#be185d', fontSize:13, cursor:'pointer', fontWeight:700, opacity: saving?0.7:1 }}>
               {saving ? 'Speichern…' : 'Speichern'}
             </button>
           </div>
         </div>
 
         {food.isCustom && (
-          <div style={{ borderTop:'1px solid #eee', marginTop:'1rem', paddingTop:'1rem', textAlign:'right' }}>
-            <button onClick={()=>onDeleteCustomFood(food)} style={{ padding:'6px 12px', borderRadius:8, border:'1px solid #eee', background:'#fff', color:'#b91c1c', fontSize:12, cursor:'pointer' }}>
+          <div style={{ borderTop:'1px solid #f0e4d8', marginTop:'1rem', paddingTop:'1rem', textAlign:'right' }}>
+            <button onClick={()=>onDeleteCustomFood(food)} style={{ padding:'6px 12px', borderRadius:12, border:'1px solid #f0e4d8', background:'#fff', color:'#b91c1c', fontSize:12, cursor:'pointer' }}>
               Eigenes Lebensmittel löschen
             </button>
           </div>
@@ -129,52 +135,52 @@ function AddFoodModal({ onSave, onClose, saving }) {
   }
 
   return (
-    <div onClick={e=>{ if(e.target===e.currentTarget)onClose() }} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'1rem' }}>
-      <div style={{ background:'#fff', borderRadius:16, padding:'1.5rem', width:'100%', maxWidth:440, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 12px 40px rgba(0,0,0,.2)' }}>
+    <div onClick={e=>{ if(e.target===e.currentTarget)onClose() }} style={{ position:'fixed', inset:0, background:'rgba(58,47,40,.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'1rem' }}>
+      <div style={{ background:'#fff', borderRadius:20, padding:'1.5rem', width:'100%', maxWidth:440, maxHeight:'90vh', overflowY:'auto', boxShadow:'0 16px 48px rgba(58,47,40,.25)' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'1rem' }}>
-          <div style={{ fontSize:18, fontWeight:700 }}>Eigenes Lebensmittel hinzufügen</div>
+          <div style={{ fontSize:18, fontWeight:800 }}>Eigenes Lebensmittel hinzufügen</div>
           <button onClick={onClose} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer', color:'#999', lineHeight:1, padding:'0 4px' }}>×</button>
         </div>
 
-        <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Name</label>
+        <label style={{ fontSize:12, color:'#8a7768', display:'block', marginBottom:4 }}>Name</label>
         <input value={name} onChange={e=>setName(e.target.value)} placeholder="z.B. Drachenfrucht" autoFocus
-          style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, marginBottom:10, fontFamily:'inherit' }} />
+          style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5d5c5', borderRadius:12, fontSize:13, marginBottom:10, fontFamily:'inherit' }} />
 
         <div style={{ display:'flex', gap:12, marginBottom:10 }}>
           <div style={{ flex:1 }}>
-            <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Kategorie</label>
+            <label style={{ fontSize:12, color:'#8a7768', display:'block', marginBottom:4 }}>Kategorie</label>
             <select value={category} onChange={e=>setCategory(e.target.value)}
-              style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, fontFamily:'inherit', background:'#fff' }}>
+              style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5d5c5', borderRadius:12, fontSize:13, fontFamily:'inherit', background:'#fff' }}>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div style={{ flex:1 }}>
-            <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Ab wann (Monate)</label>
+            <label style={{ fontSize:12, color:'#8a7768', display:'block', marginBottom:4 }}>Ab wann (Monate)</label>
             <select value={phase} onChange={e=>setPhase(Number(e.target.value))}
-              style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, fontFamily:'inherit', background:'#fff' }}>
+              style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5d5c5', borderRadius:12, fontSize:13, fontFamily:'inherit', background:'#fff' }}>
               {PHASES.map(p => <option key={p} value={p}>ab {p} Mo</option>)}
             </select>
           </div>
         </div>
 
-        <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Zubereitung</label>
+        <label style={{ fontSize:12, color:'#8a7768', display:'block', marginBottom:4 }}>Zubereitung</label>
         <textarea value={prep} onChange={e=>setPrep(e.target.value)} rows={2} placeholder="z.B. Weich garen und pürieren…"
-          style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, resize:'vertical', fontFamily:'inherit', marginBottom:10 }} />
+          style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5d5c5', borderRadius:12, fontSize:13, resize:'vertical', fontFamily:'inherit', marginBottom:10 }} />
 
-        <label style={{ fontSize:12, color:'#666', display:'block', marginBottom:4 }}>Hinweise (optional)</label>
+        <label style={{ fontSize:12, color:'#8a7768', display:'block', marginBottom:4 }}>Hinweise (optional)</label>
         <textarea value={tips} onChange={e=>setTips(e.target.value)} rows={2} placeholder="z.B. Kann Blähungen verursachen…"
-          style={{ width:'100%', padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, fontSize:13, resize:'vertical', fontFamily:'inherit', marginBottom:10 }} />
+          style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5d5c5', borderRadius:12, fontSize:13, resize:'vertical', fontFamily:'inherit', marginBottom:10 }} />
 
-        <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, color:'#333', marginBottom:4, cursor:'pointer' }}>
+        <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, color:'#4a3f38', marginBottom:4, cursor:'pointer' }}>
           <input type="checkbox" checked={isAllergen} onChange={e=>setIsAllergen(e.target.checked)} />
           Häufiges Allergen
         </label>
 
-        {error && <div style={{ marginTop:8, padding:'6px 10px', background:'#fee2e2', color:'#b91c1c', borderRadius:6, fontSize:12 }}>{error}</div>}
+        {error && <div style={{ marginTop:8, padding:'6px 10px', background:'#fee2e2', color:'#b91c1c', borderRadius:8, fontSize:12 }}>{error}</div>}
 
         <div style={{ display:'flex', gap:8, marginTop:14, justifyContent:'flex-end' }}>
-          <button onClick={onClose} style={{ padding:'7px 14px', borderRadius:8, border:'1px solid #ddd', background:'#fff', fontSize:13, cursor:'pointer' }}>Abbrechen</button>
-          <button onClick={submit} disabled={saving} style={{ padding:'7px 16px', borderRadius:8, border:'1px solid #a4c0f9', background:'#e8f0fe', color:'#1a56db', fontSize:13, cursor:'pointer', fontWeight:600, opacity: saving?0.7:1 }}>
+          <button onClick={onClose} style={{ padding:'7px 14px', borderRadius:12, border:'1px solid #e5d5c5', background:'#fff', fontSize:13, cursor:'pointer' }}>Abbrechen</button>
+          <button onClick={submit} disabled={saving} style={{ padding:'7px 16px', borderRadius:12, border:'1px solid #f9a8d4', background:'#fce7f3', color:'#be185d', fontSize:13, cursor:'pointer', fontWeight:700, opacity: saving?0.7:1 }}>
             {saving ? 'Speichern…' : 'Hinzufügen'}
           </button>
         </div>
@@ -343,7 +349,7 @@ export default function App() {
   }, [])
 
   if (session === undefined) {
-    return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', color:'#aaa', fontSize:14 }}>Laden…</div>
+    return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', color:'#c4b3a3', fontSize:14 }}>Laden…</div>
   }
 
   if (!session) return <AuthScreen />
@@ -351,10 +357,10 @@ export default function App() {
   if (babies.length === 0) {
     return (
       <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
-        <div style={{ background:'#fff', borderRadius:16, padding:'2rem', maxWidth:380, width:'100%', textAlign:'center', boxShadow:'0 4px 24px rgba(0,0,0,.08)' }}>
+        <div style={{ background:'#fff', borderRadius:22, padding:'2rem', maxWidth:380, width:'100%', textAlign:'center', boxShadow:'0 8px 32px rgba(58,47,40,.1)' }}>
           <div style={{ fontSize:40, marginBottom:12 }}>👶</div>
-          <div style={{ fontSize:17, fontWeight:700, marginBottom:8 }}>Erstes Baby anlegen</div>
-          <div style={{ fontSize:13, color:'#888', marginBottom:'1.5rem' }}>Leg dein erstes Baby an um mit dem Tracken zu beginnen.</div>
+          <div style={{ fontSize:17, fontWeight:800, marginBottom:8 }}>Erstes Baby anlegen</div>
+          <div style={{ fontSize:13, color:'#a8927e', marginBottom:'1.5rem' }}>Leg dein erstes Baby an um mit dem Tracken zu beginnen.</div>
           <BabySelector babies={[]} selectedBaby={null} onSelect={setSelectedBaby} onBabiesChange={b=>{ setBabies(b); if(b.length) setSelectedBaby(b[0]) }} userEmail={session.user.email} />
         </div>
       </div>
@@ -372,9 +378,9 @@ export default function App() {
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <div onClick={()=>selectedBaby?.avatar_url ? setShowAvatarPreview(true) : avatarInputRef.current?.click()}
               title={selectedBaby?.avatar_url ? 'Foto ansehen' : 'Baby-Foto hochladen'} style={{
-              width:44, height:44, borderRadius:'50%', flexShrink:0, cursor:'pointer', position:'relative',
-              background: selectedBaby?.avatar_url ? 'transparent' : '#eee', overflow:'hidden',
-              display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 0 1px #ddd',
+              width:46, height:46, borderRadius:'50%', flexShrink:0, cursor:'pointer', position:'relative',
+              background: selectedBaby?.avatar_url ? 'transparent' : '#fce7f3', overflow:'hidden',
+              display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 0 2px #fff, 0 2px 8px rgba(58,47,40,.12)',
             }}>
               {selectedBaby?.avatar_url
                 ? <img src={selectedBaby.avatar_url} alt={selectedBaby.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
@@ -385,37 +391,37 @@ export default function App() {
             </div>
             <input type="file" accept="image/*" ref={avatarInputRef} onChange={handleAvatarChange} style={{ display:'none' }} />
             <div>
-              <h1 style={{ fontSize:19, fontWeight:700, marginBottom:2 }}>
+              <h1 style={{ fontSize:20, fontWeight:800, marginBottom:2, color:'#3a2f28' }}>
                 {selectedBaby?.name}
               </h1>
-              <p style={{ fontSize:13, color:'#888' }}>Beikost-Tracker · Baby Led Weaning</p>
+              <p style={{ fontSize:13, color:'#a8927e' }}>Beikost-Tracker · Baby Led Weaning</p>
             </div>
             <input type="color" value={bgColor} onChange={e=>handleBackgroundChange(e.target.value)}
               title="Hintergrundfarbe für dieses Baby"
-              style={{ width:28, height:28, padding:0, border:'1px solid #ddd', borderRadius:'50%', cursor:'pointer', overflow:'hidden', flexShrink:0 }} />
+              style={{ width:28, height:28, padding:0, border:'2px solid #fff', boxShadow:'0 2px 6px rgba(58,47,40,.15)', borderRadius:'50%', cursor:'pointer', overflow:'hidden', flexShrink:0 }} />
           </div>
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-            {[{label:'Eingeführt',val:fedCount,bg:'#f0faf5',color:'#047857'},{label:'Noch offen',val:allFoods.length-fedCount,bg:'#f5f5f3',color:'#666'},{label:'Gesamt',val:allFoods.length,bg:'#f5f5f3',color:'#666'}].map(s=>(
-              <div key={s.label} style={{ background:s.bg, borderRadius:9, padding:'6px 14px', fontSize:13, color:s.color, border:'1px solid #e5e5e3' }}>{s.label}: <strong>{s.val}</strong></div>
+            {[{label:'Eingeführt',val:fedCount,bg:'#f0faf5',color:'#047857',border:'#d3f0e0'},{label:'Noch offen',val:allFoods.length-fedCount,bg:'#fdf1e7',color:'#a8825f',border:'#f5e2cd'},{label:'Gesamt',val:allFoods.length,bg:'#fdf1e7',color:'#a8825f',border:'#f5e2cd'}].map(s=>(
+              <div key={s.label} style={{ background:s.bg, borderRadius:12, padding:'6px 14px', fontSize:13, color:s.color, border:`1px solid ${s.border}` }}>{s.label}: <strong>{s.val}</strong></div>
             ))}
           </div>
         </div>
 
-        <div style={{ background:'#fff4cd', border:'1px solid #fde68a', borderRadius:9, padding:'10px 14px', fontSize:12, color:'#92400e', lineHeight:1.6, marginBottom:'1rem' }}>
+        <div style={{ background:'#fff4cd', border:'1px solid #fde68a', borderRadius:14, padding:'10px 14px', fontSize:12, color:'#92400e', lineHeight:1.6, marginBottom:'1rem' }}>
           <strong>Hinweis:</strong> Monatsangaben sind allgemeine Richtwerte, keine medizinischen Empfehlungen. Bitte individuelle Empfehlungen mit eurer Kinderärztin besprechen – besonders bei Frühgeburt oder Allergievorgeschichte in der Familie.
         </div>
 
         <div style={{ display:'flex', gap:8, marginBottom:'1rem' }}>
           <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Lebensmittel suchen…"
-            style={{ flex:1, padding:'9px 14px', border:'1px solid #ddd', borderRadius:10, fontSize:14, background:'#fff', fontFamily:'inherit' }} />
-          <button onClick={()=>setShowAddFood(true)} style={{ padding:'9px 14px', borderRadius:10, border:'1px dashed #a4c0f9', background:'#e8f0fe', color:'#1a56db', fontSize:13, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+            style={{ flex:1, padding:'9px 14px', border:'1px solid #f0e4d8', borderRadius:14, fontSize:14, background:'#fff', fontFamily:'inherit' }} />
+          <button onClick={()=>setShowAddFood(true)} style={{ padding:'9px 14px', borderRadius:14, border:'1px dashed #f9a8d4', background:'#fce7f3', color:'#be185d', fontSize:13, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
             + Lebensmittel
           </button>
         </div>
 
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:'1.25rem' }}>
           {FILTERS.map(f=>(
-            <button key={f.id} onClick={()=>setFilter(f.id)} style={{ padding:'5px 14px', borderRadius:20, border:'1px solid', fontSize:13, cursor:'pointer', background:filter===f.id?'#e8f0fe':'#fff', color:filter===f.id?'#1a56db':'#666', borderColor:filter===f.id?'#a4c0f9':'#ddd' }}>
+            <button key={f.id} onClick={()=>setFilter(f.id)} style={{ padding:'5px 14px', borderRadius:20, border:`1px solid ${filter===f.id?'#f9a8d4':'#f0e4d8'}`, fontSize:13, fontWeight:600, cursor:'pointer', background:filter===f.id?'#fce7f3':'#fff', color:filter===f.id?'#be185d':'#8a7768' }}>
               {f.label}
             </button>
           ))}
@@ -429,9 +435,11 @@ export default function App() {
               const items = byCategory[cat]
               if (!items?.length) return null
               return (
-                <div key={cat} style={{ marginBottom:'1.5rem' }}>
-                  <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em', color:'#999', marginBottom:8 }}>{cat}</div>
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(155px, 1fr))', gap:6 }}>
+                <div key={cat} style={{ marginBottom:'1.75rem' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, fontWeight:800, textTransform:'uppercase', letterSpacing:'.06em', color:'#a8927e', marginBottom:10 }}>
+                    <span style={{ fontSize:15 }}>{CATEGORY_ICONS[cat]}</span>{cat}
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(155px, 1fr))', gap:8 }}>
                     {items.map(food=>(
                       <FoodCard key={food.name} food={food} logEntry={foodLog[food.name]} onClick={setSelectedFood} />
                     ))}
@@ -459,10 +467,10 @@ export default function App() {
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, maxWidth:420, width:'100%' }}>
             <img src={selectedBaby.avatar_url} alt={selectedBaby.name} style={{ width:'100%', maxWidth:340, aspectRatio:'1 / 1', objectFit:'cover', borderRadius:'50%', boxShadow:'0 12px 40px rgba(0,0,0,.4)' }} />
             <div style={{ display:'flex', gap:8 }}>
-              <button onClick={()=>{ setShowAvatarPreview(false); avatarInputRef.current?.click() }} style={{ padding:'8px 16px', borderRadius:8, border:'1px solid #a4c0f9', background:'#e8f0fe', color:'#1a56db', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+              <button onClick={()=>{ setShowAvatarPreview(false); avatarInputRef.current?.click() }} style={{ padding:'8px 16px', borderRadius:12, border:'1px solid #f9a8d4', background:'#fce7f3', color:'#be185d', fontSize:13, fontWeight:700, cursor:'pointer' }}>
                 Foto ändern
               </button>
-              <button onClick={()=>setShowAvatarPreview(false)} style={{ padding:'8px 16px', borderRadius:8, border:'1px solid #ddd', background:'#fff', fontSize:13, cursor:'pointer' }}>
+              <button onClick={()=>setShowAvatarPreview(false)} style={{ padding:'8px 16px', borderRadius:12, border:'1px solid #eee', background:'#fff', fontSize:13, cursor:'pointer' }}>
                 Schließen
               </button>
             </div>

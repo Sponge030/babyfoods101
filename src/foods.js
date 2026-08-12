@@ -7,7 +7,7 @@ export const ALLERGENS = new Set([
 
 export const CATEGORIES = [
   'Gemüse','Obst','Fleisch','Meeresfrüchte',
-  'Hülsenfrüchte','Getreide','Milchprodukte','Nüsse & Samen'
+  'Hülsenfrüchte','Getreide','Milchprodukte','Nüsse & Samen','Gewürze'
 ];
 
 // phase: frühester empfohlener Einführungsmonat
