@@ -119,8 +119,8 @@ function Modal({ food, logEntry, onSave, onDelete, onClose, saving, onDeleteCust
   )
 }
 
-function AddFoodModal({ onSave, onClose, saving }) {
-  const [name, setName] = useState('')
+function AddFoodModal({ onSave, onClose, saving, initialName = '' }) {
+  const [name, setName] = useState(initialName)
   const [category, setCategory] = useState(CATEGORIES[0])
   const [phase, setPhase] = useState(6)
   const [prep, setPrep] = useState('')
@@ -447,7 +447,18 @@ export default function App() {
                 </div>
               )
             })}
-            {filtered.length===0 && <div style={{ textAlign:'center', color:'#bbb', padding:'2rem', fontSize:14 }}>Keine Lebensmittel für diesen Filter gefunden.</div>}
+            {filtered.length===0 && (
+              <div style={{ textAlign:'center', color:'#bbb', padding:'2rem', fontSize:14 }}>
+                Keine Lebensmittel für diesen Filter gefunden.
+                {search.trim() && (
+                  <div style={{ marginTop:12 }}>
+                    <button onClick={()=>setShowAddFood(true)} style={{ padding:'9px 16px', borderRadius:14, border:'1px dashed #f9a8d4', background:'#fce7f3', color:'#be185d', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                      „{search.trim()}" hinzufügen
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -459,7 +470,8 @@ export default function App() {
       )}
 
       {showAddFood && (
-        <AddFoodModal onSave={handleAddFood} onClose={()=>setShowAddFood(false)} saving={savingFood} />
+        <AddFoodModal onSave={handleAddFood} onClose={()=>setShowAddFood(false)} saving={savingFood}
+          initialName={search.trim().replace(/^./, c => c.toUpperCase())} />
       )}
 
       {showAvatarPreview && selectedBaby?.avatar_url && (
